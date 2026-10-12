@@ -124,9 +124,6 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
 .capture{display:flex;align-items:center;gap:12px}
 .capture-bar{flex:1;height:8px;background:var(--line);border-radius:4px;overflow:hidden}
 .capture-bar i{display:block;height:100%;width:0;background:var(--brass);transition:width .1s linear}
-.partials{display:flex;gap:4px;flex-wrap:wrap}
-.partials span{width:26px;height:26px;display:grid;place-items:center;font:500 11px var(--f-mono);border:1px solid var(--line);border-radius:4px;color:var(--muted)}
-.partials span.on{background:var(--brass);border-color:var(--brass);color:var(--surface)}
 .result{margin:0;font-size:14px;color:var(--ok);min-height:1.5em}
 .actions{display:flex;flex-wrap:wrap;gap:8px}
 .actions .btn{flex:1 1 auto}
@@ -307,6 +304,8 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
 .seg button:focus-visible{outline:2px solid var(--brass);outline-offset:-2px}
 .tabs.tabs-2{grid-template-columns:repeat(2,1fr)}
 .croots{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+#chordView{display:flex;flex-wrap:wrap}
+#chordView button{flex:1 1 auto}
 .croots button{font:500 14px/1 var(--f-mono);padding:10px 2px;min-height:44px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
 .croots button[aria-pressed="true"]{border-color:var(--brass);background:var(--brass-soft)}
 .croots button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
@@ -413,7 +412,6 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
       <p class="meta"><span id="mapKey">Tangent 1</span> · liksvävande <span id="mapHz" class="mono">27,50 Hz</span></p>
       <p id="mapPrompt" class="prompt">Starta mikrofonen för att börja.</p>
       <div class="capture"><div class="capture-bar"><i id="mapStab"></i></div><span id="mapLive" class="mono">—</span></div>
-      <div class="partials" id="mapPartials" aria-label="Hörda deltoner"></div>
       <p id="mapResult" class="result" aria-live="polite"></p>
     </div>
     <div class="actions">
@@ -519,8 +517,12 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
       <button class="tab" role="tab" id="csub-guitar" data-chordi="guitar" type="button">Gitarr</button>
       <button class="tab" role="tab" id="csub-piano" data-chordi="piano" type="button">Piano</button>
     </nav>
-    <div class="croots" role="group" aria-label="Grundton" id="chordRoots"></div>
-    <label class="check"><input type="checkbox" id="chordPair"><span>Visa dur + mollparallell</span></label>
+    <div class="croots" role="group" aria-label="Grundton (tonika)" id="chordRoots"></div>
+    <div class="seg" role="group" aria-label="Vy" id="chordView">
+      <button type="button" data-cv="single" aria-pressed="true">Ett ackord</button>
+      <button type="button" data-cv="pair" aria-pressed="false">Dur + mollparallell</button>
+      <button type="button" data-cv="func" aria-pressed="false">T · S · D + paralleller</button>
+    </div>
     <div class="seg" role="group" aria-label="Ackordtyp" id="chordQual">
       <button type="button" data-cq="maj" aria-pressed="true">Dur</button>
       <button type="button" data-cq="min" aria-pressed="false">Moll</button>
@@ -1273,19 +1275,14 @@ function tick(){
 
 /* ---------- Mapping ---------- */
 let mapHist=[], mapArmed=false, armedAt=0, cooldown=0, mapLastResult='';
-function resetMap(){ mapHist=[]; mapArmed=false; armedAt=0; setStab(0); setChips([]); }
+function resetMap(){ mapHist=[]; mapArmed=false; armedAt=0; setStab(0); }
 function setStab(v){ $('mapStab').style.width = Math.round(Math.max(0,Math.min(1,v))*100)+'%'; }
-function setChips(found){
-  const on = new Set(found.map(p=>p.n));
-  $('mapPartials').querySelectorAll('span').forEach((s,i)=>s.classList.toggle('on',on.has(i+1)));
-}
 function mapTick(now){
   const m = S.curMap; if(!inRange(m) || now<cooldown) return;
   const prev = levels.length>=3 ? levels[levels.length-3] : 0;
   if(level>0.0015 && level>prev*1.6){ mapArmed = true; armedAt = now; mapHist = []; }
   const fN = fET(m);
   const r = DSP.analyze(buf,sr,fN,{Bguess:Math.pow(10,priorLogB(m)),windowCents:60});
-  setChips(r.found);
   const prompt = $('mapPrompt'), live = $('mapLive');
   if(!mapArmed){ prompt.textContent = `Slå an ${label(m)} och låt tonen klinga.`; prompt.className='prompt'; live.textContent='väntar på anslag'; setStab(0); return; }
   const need = fN<1000 ? 2 : 1;
@@ -1752,12 +1749,18 @@ function crdKbdEl(root,intervals){
   }
   return el;
 }
-let crdRoot = 0, crdQual = 'maj', crdInstr = 'guitar';
+let crdRoot = 0, crdQual = 'maj', crdInstr = 'guitar', crdView = 'single';
 function buildCrdRoots(){
   $('chordRoots').innerHTML = CRD_CIRCLE.map(pc=>`<button type="button" data-croot="${pc}" aria-pressed="${pc===crdRoot}">${PCS[pc]}</button>`).join('');
 }
 // The relative minor sits a minor third below its major (same key signature, different root).
 const crdRelMinor = root => (root+9)%12;
+// The three primary triads of a major key (tonic, subdominant, dominant) and their relative minors
+// (Tp, Sp, Dp in Swedish/German functional-harmony notation), all diatonic to the chosen tonic.
+const CRD_FUNCS = [
+  {id:'T',  off:0, q:'maj'}, {id:'S',  off:5, q:'maj'}, {id:'D',  off:7, q:'maj'},
+  {id:'Tp', off:9, q:'min'}, {id:'Sp', off:2, q:'min'}, {id:'Dp', off:4, q:'min'}
+];
 function crdDiagramEl(root,qid){
   if(crdInstr==='guitar'){
     const {frets,n} = crdGuitarShape(root,qid);
@@ -1766,35 +1769,45 @@ function crdDiagramEl(root,qid){
   }
   return crdKbdEl(root,CRD_QMAP[qid].intervals);
 }
+function crdCell(root,qid,heading){
+  const cell = document.createElement('div'); cell.innerHTML = `<h3>${heading}</h3>`;
+  cell.appendChild(crdDiagramEl(root,qid));
+  return cell;
+}
 function renderCrd(){
-  const pair = $('chordPair').checked;
   $('csub-guitar').setAttribute('aria-selected', String(crdInstr==='guitar'));
   $('csub-piano').setAttribute('aria-selected', String(crdInstr==='piano'));
   for(const b of $('chordRoots').children) b.setAttribute('aria-pressed', String(+b.dataset.croot===crdRoot));
+  for(const b of $('chordView').children) b.setAttribute('aria-pressed', String(b.dataset.cv===crdView));
   for(const b of $('chordQual').children) b.setAttribute('aria-pressed', String(b.dataset.cq===crdQual));
-  $('chordQual').hidden = pair;
+  $('chordQual').hidden = crdView!=='single';
   const dia = $('chordDiagram'); dia.innerHTML = '';
-  if(pair){
+  const strHint = crdInstr==='guitar' ? ' × = tyst sträng, ○ = öppen sträng.' : ' Klaviaturerna visas i grundläget över två oktaver.';
+  if(crdView==='pair'){
     const relRoot = crdRelMinor(crdRoot);
     $('chordName').textContent = `Ackord · ${PCS[crdRoot]}-dur + ${PCS[relRoot]}-moll (mollparallell)`;
     const wrap = document.createElement('div'); wrap.className = 'cpair';
-    const majCell = document.createElement('div'); majCell.innerHTML = `<h3>${PCS[crdRoot]}-dur</h3>`;
-    majCell.appendChild(crdDiagramEl(crdRoot,'maj'));
-    const minCell = document.createElement('div'); minCell.innerHTML = `<h3>${PCS[relRoot]}-moll</h3>`;
-    minCell.appendChild(crdDiagramEl(relRoot,'min'));
-    wrap.append(majCell,minCell);
+    wrap.append(crdCell(crdRoot,'maj',`${PCS[crdRoot]}-dur`), crdCell(relRoot,'min',`${PCS[relRoot]}-moll`));
     dia.appendChild(wrap);
-    $('chordHint').textContent = `${PCS[relRoot]}-moll är mollparallellen till ${PCS[crdRoot]}-dur: samma förtecken, annan grundton.`
-      + (crdInstr==='guitar' ? ' × = tyst sträng, ○ = öppen sträng.' : ' Klaviaturerna visas i grundläget över två oktaver.');
+    $('chordHint').textContent = `${PCS[relRoot]}-moll är mollparallellen till ${PCS[crdRoot]}-dur: samma förtecken, annan grundton.` + strHint;
+  } else if(crdView==='func'){
+    $('chordName').textContent = `Ackord · tonika, subdominant, dominant + paralleller i ${PCS[crdRoot]}-dur`;
+    const wrap = document.createElement('div'); wrap.className = 'cpair';
+    for(const f of CRD_FUNCS){
+      const r = (crdRoot+f.off)%12;
+      wrap.appendChild(crdCell(r,f.q,`${PCS[r]}${f.q==='min'?'m':''} (${f.id})`));
+    }
+    dia.appendChild(wrap);
+    $('chordHint').textContent = `Tonika, subdominant och dominant (T, S, D) är de tre huvudackorden i ${PCS[crdRoot]}-dur. Tp, Sp och Dp är deras mollparalleller.` + strHint;
   } else {
     const q = CRD_QMAP[crdQual];
     $('chordName').textContent = `Ackord · ${PCS[crdRoot]}${q.suffix} (${PCS[crdRoot]}-${q.label.toLowerCase()})`;
     dia.appendChild(crdDiagramEl(crdRoot,crdQual));
     if(crdInstr==='guitar'){
       const n = crdGuitarShape(crdRoot,crdQual).n;
-      $('chordHint').textContent = n>0 ? `Flyttbart grepp, barré på band ${n}. × = tyst sträng, ○ = öppen sträng.` : '× = tyst sträng, ○ = öppen sträng.';
+      $('chordHint').textContent = (n>0 ? `Flyttbart grepp, barré på band ${n}.` : '') + strHint;
     } else {
-      $('chordHint').textContent = 'Klaviaturet visas i grundläget över två oktaver. Tangenterna som ska tryckas ner är markerade med en prick och namngivna.';
+      $('chordHint').textContent = 'Tangenterna som ska tryckas ner är markerade med en prick och namngivna.' + strHint;
     }
   }
 }
@@ -3189,7 +3202,6 @@ function renderAll(){
 /* ---------- Wire up ---------- */
 load();
 buildKbd();
-$('mapPartials').innerHTML = Array.from({length:12},(_,i)=>`<span>${i+1}</span>`).join('');
 buildSettings();
 buildGuitar();
 buildCrdRoots();
@@ -3206,7 +3218,7 @@ $('csub-guitar').addEventListener('click',()=>{ crdInstr = 'guitar'; renderCrd()
 $('csub-piano').addEventListener('click',()=>{ crdInstr = 'piano'; renderCrd(); });
 $('chordRoots').addEventListener('click',e=>{ const b = e.target.closest('button'); if(!b) return; crdRoot = +b.dataset.croot; renderCrd(); });
 $('chordQual').addEventListener('click',e=>{ const b = e.target.closest('button'); if(!b || !b.dataset.cq) return; crdQual = b.dataset.cq; renderCrd(); });
-$('chordPair').addEventListener('change',renderCrd);
+$('chordView').addEventListener('click',e=>{ const b = e.target.closest('button'); if(!b || !b.dataset.cv) return; crdView = b.dataset.cv; renderCrd(); });
 $('mStart').addEventListener('click',()=> M.running ? mStop() : mStart());
 // sampler controls
 const setSBpm = b => { S.settings.sBpm = Math.max(40,Math.min(220,Math.round(b))); $('sBpm').textContent = S.settings.sBpm; $('sRange').value = S.settings.sBpm; save(); };
