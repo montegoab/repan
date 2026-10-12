@@ -305,6 +305,22 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
 .seg button{border:0;background:transparent;color:var(--muted);font:500 14px/1 var(--f-body);padding:0 14px;min-height:42px;cursor:pointer}
 .seg button[aria-pressed="true"]{background:var(--brass-soft);color:var(--ink)}
 .seg button:focus-visible{outline:2px solid var(--brass);outline-offset:-2px}
+.tabs.tabs-2{grid-template-columns:repeat(2,1fr)}
+.croots{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.croots button{font:500 14px/1 var(--f-mono);padding:10px 2px;min-height:44px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.croots button[aria-pressed="true"]{border-color:var(--brass);background:var(--brass-soft)}
+.croots button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.cfb{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;max-width:240px;margin:0 auto}
+.cfb svg{width:100%;height:auto;display:block}
+.cfb .cstr{stroke:var(--muted)}
+.cfb .cfret{stroke:var(--line)}
+.cfb .cfret.nut{stroke:var(--ink);stroke-width:3}
+.cfb .cbarre{fill:var(--brass-soft);stroke:var(--brass);stroke-width:1.5}
+.cfb .cdot{fill:var(--brass)}
+.cfb .cmark{fill:var(--muted);font:600 13px var(--f-mono)}
+.cfb .cfretnum{fill:var(--muted);font:500 11px var(--f-mono)}
+.ckbd{position:relative;height:68px;background:var(--key-black);border-radius:4px;max-width:420px;margin:0 auto}
+.ckbd .key{font:600 10px var(--f-mono);display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px}
 .section{display:grid;gap:10px;min-width:0}
 .section h2{font:600 22px/1.2 var(--f-display);margin:8px 0 0;text-wrap:balance}
 .section p{margin:0;color:var(--muted);max-width:65ch}
@@ -342,21 +358,26 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
 <body>
 <div class="wrap">
   <header class="top">
-    <div class="brand"><h1>Repan</h1><span>gitarr · piano · intonering · metronom · sampler</span></div>
+    <div class="brand"><h1>Repan</h1><span>gitarr · piano · ackord · intonering · metronom · sampler</span></div>
     <div class="mic">
       <div class="lvl" aria-hidden="true"><i id="lvl"></i></div>
       <button id="micBtn" class="btn primary" type="button">Starta mikrofon</button>
     </div>
   </header>
   <nav class="maintabs" role="tablist" aria-label="Verktyg">
-    <button class="mtab" role="tab" id="top-guitar" data-top="guitar" type="button">Gitarr</button>
-    <button class="mtab" role="tab" id="top-piano" data-top="piano" type="button">Piano</button>
+    <button class="mtab" role="tab" id="top-tuners" data-top="tuners" type="button">Tuners</button>
+    <button class="mtab" role="tab" id="top-chords" data-top="chords" type="button">Ackord</button>
     <button class="mtab" role="tab" id="top-intone" data-top="intone" type="button">Intonering</button>
     <button class="mtab" role="tab" id="top-metro" data-top="metro" type="button">Metronom</button>
     <button class="mtab" role="tab" id="top-sampler" data-top="sampler" type="button">Sampler</button>
   </nav>
   <p id="micErr" class="alert" role="alert" hidden></p>
   <p id="micNote" class="micnote" hidden>Mikrofonen är redo. Tryck var som helst på sidan för att börja lyssna.</p>
+
+  <nav class="tabs tabs-2" role="tablist" aria-label="Stämmare" id="tunerTabs">
+    <button class="tab" role="tab" id="tsub-guitar" data-tuner="guitar" type="button">Gitarr</button>
+    <button class="tab" role="tab" id="tsub-piano" data-tuner="piano" type="button">Piano</button>
+  </nav>
 
   <div class="pianobar" id="pianoBar">
     <label for="pianoSel">Piano</label>
@@ -483,6 +504,26 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
       <div class="listen">
         <button id="gPlay" class="btn play" type="button"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 1.5v9l7.5-4.5z"/></svg><span>Spela strängens ton</span></button>
       </div>
+    </div>
+  </section>
+
+  <!-- Ackord -->
+  <section id="v-chord" class="section" hidden>
+    <nav class="tabs tabs-2" role="tablist" aria-label="Instrument" id="chordTabs">
+      <button class="tab" role="tab" id="csub-guitar" data-chordi="guitar" type="button">Gitarr</button>
+      <button class="tab" role="tab" id="csub-piano" data-chordi="piano" type="button">Piano</button>
+    </nav>
+    <div class="croots" role="group" aria-label="Grundton" id="chordRoots"></div>
+    <div class="seg" role="group" aria-label="Ackordtyp" id="chordQual">
+      <button type="button" data-cq="maj" aria-pressed="true">Dur</button>
+      <button type="button" data-cq="min" aria-pressed="false">Moll</button>
+      <button type="button" data-cq="dom7" aria-pressed="false">7</button>
+      <button type="button" data-cq="maj7" aria-pressed="false">Maj7</button>
+    </div>
+    <div class="stage">
+      <p class="eyebrow" id="chordName">C-dur</p>
+      <div id="chordDiagram"></div>
+      <p class="hint" id="chordHint"></p>
     </div>
   </section>
 
@@ -856,9 +897,9 @@ const PROFILES = {
 /* ---------- State ---------- */
 // Each piano keeps its own map, tuning, range, reference and stretch. Sound and naming preferences are shared.
 const KEY = 'stamnyckeln.v2', KEY_V1 = 'stamnyckeln.v1';
-const DEF = {lo:21,hi:108,aref:440,profile:'standard',names:'H',overpull:false,autoNext:false,chordMinor:false,refSound:'organ',unison:'clean',gPreset:'standard',gAref:440,mBpm:96,mMode:'click',mSig:'4/4',mGroove:'rock',mKit:'vintage',mVol:0.8,lastPiano:'map',mEdits:{},iMode:'ship',iDiff:'easy',iTrans:0,sBpm:100,sPattern:null,sSlots:[],sTrimV:1};
+const DEF = {lo:21,hi:108,aref:440,profile:'standard',names:'H',overpull:false,autoNext:false,chordMinor:false,refSound:'organ',unison:'clean',gPreset:'standard',gAref:440,mBpm:96,mMode:'click',mSig:'4/4',mGroove:'rock',mKit:'vintage',mVol:0.8,lastPiano:'map',lastTuner:'piano',mEdits:{},iMode:'ship',iDiff:'easy',iTrans:0,sBpm:100,sPattern:null,sSlots:[],sTrimV:1};
 const PIANO_KEYS = ['lo','hi','aref','profile','overpull','unison'];
-const PREF_KEYS = ['names','autoNext','chordMinor','refSound','gPreset','gAref','mBpm','mMode','mSig','mGroove','mKit','mVol','lastPiano','mEdits','iMode','iDiff','iTrans','sBpm','sPattern','sSlots','sTrimV'];
+const PREF_KEYS = ['names','autoNext','chordMinor','refSound','gPreset','gAref','mBpm','mMode','mSig','mGroove','mKit','mVol','lastPiano','lastTuner','mEdits','iMode','iDiff','iTrans','sBpm','sPattern','sSlots','sTrimV'];
 const pick = (o,keys) => { const r = {}; for(const k of keys) if(o && k in o) r[k] = o[k]; return r; };
 const isObj = v => v && typeof v==='object' && !Array.isArray(v);
 const DB = {active:null, pianos:{}, prefs:{}};
@@ -877,7 +918,7 @@ function load(){
   if(isObj(d) && isObj(d.pianos)){
     for(const id in d.pianos) DB.pianos[id] = cleanPiano(d.pianos[id],'Piano');
     DB.active = d.active; DB.prefs = pick(d.prefs,PREF_KEYS);
-    if(['map','tune','over','guitar','metro','intone','sampler'].includes(d.mode)) S.mode = d.mode;
+    if(['map','tune','over','guitar','chord','metro','intone','sampler'].includes(d.mode)) S.mode = d.mode;
   } else {
     // first run, or data from the single-piano version
     let v1 = null; try{ v1 = JSON.parse(localStorage.getItem(KEY_V1)||'null'); }catch(e){}
@@ -1630,6 +1671,95 @@ function guitarSettingsChanged(){
   S.settings.gPreset = $('gPreset').value;
   if(a>=415 && a<=466) S.settings.gAref = a;
   gLock = null; gNear = null; resetGuitar(); save(); buildGuitar(); renderGuitar();
+}
+
+/* ---------- Chords ---------- */
+// Roots in circle-of-fifths order, as pitch classes into PCS (C=0 ... B=11).
+const CRD_CIRCLE = [0,7,2,9,4,11,6,1,8,3,10,5];
+const CRD_QUALITIES = [
+  {id:'maj',  label:'Dur',  suffix:'',     intervals:[0,4,7]},
+  {id:'min',  label:'Moll', suffix:'m',    intervals:[0,3,7]},
+  {id:'dom7', label:'7',    suffix:'7',    intervals:[0,4,7,10]},
+  {id:'maj7', label:'Maj7', suffix:'maj7', intervals:[0,4,7,11]}
+];
+const CRD_QMAP = Object.fromEntries(CRD_QUALITIES.map(q=>[q.id,q]));
+// Hand-picked open-position shapes for the handful of roots (C, D, G) and the one dominant 7th (B7)
+// whose usual open chord differs from the movable E-/A-shape barre formula used elsewhere.
+const CRD_OPEN = {
+  '0_maj':[null,3,2,0,1,0],  '0_dom7':[null,3,2,3,1,0], '0_maj7':[null,3,2,0,0,0],
+  '2_maj':[null,null,0,2,3,2], '2_min':[null,null,0,2,3,1], '2_dom7':[null,null,0,2,1,2], '2_maj7':[null,null,0,2,2,2],
+  '7_maj':[3,2,0,0,0,3], '7_dom7':[3,2,0,0,0,1], '7_maj7':[3,2,0,0,0,2],
+  '11_dom7':[null,2,1,2,0,2]
+};
+// Movable shapes (strings low E, A, D, G, B, e), root fretted at n: the E-shape (root on the low E
+// string) when that gives the lower fret, otherwise the A-shape (root on the A string).
+function crdGuitarShape(root,qid){
+  const open = CRD_OPEN[root+'_'+qid];
+  if(open) return {frets:open, n:0};
+  const nE = (root-4+12)%12, nA = (root-9+12)%12;
+  if(nE<=nA){
+    const n = nE;
+    return {frets:{maj:[n,n+2,n+2,n+1,n,n], min:[n,n+2,n+2,n,n,n], dom7:[n,n+2,n,n+1,n,n], maj7:[n,n+2,n+1,n+1,n,n]}[qid], n};
+  }
+  const n = nA;
+  return {frets:{maj:[null,n,n+2,n+2,n+2,n], min:[null,n,n+2,n+2,n+1,n], dom7:[null,n,n+2,n,n+2,n], maj7:[null,n,n+2,n+1,n+2,n]}[qid], n};
+}
+function crdFretSVG(frets,n){
+  const x0=18, y0=20, w=104, h=120, rows=4;
+  const sx = i => x0 + i*(w/5), fy = r => y0 + r*(h/rows);
+  let s = `<svg viewBox="0 0 ${x0*2+w} ${y0+h+14}" role="img" aria-label="Ackorddiagram för gitarr">`;
+  for(let i=0;i<6;i++) s += `<line class="cstr" x1="${sx(i)}" x2="${sx(i)}" y1="${fy(0)}" y2="${fy(rows)}"/>`;
+  for(let r=0;r<=rows;r++) s += `<line class="cfret${r===0&&n===0?' nut':''}" x1="${sx(0)}" x2="${sx(5)}" y1="${fy(r)}" y2="${fy(r)}"/>`;
+  if(n>0){
+    const played = frets.map((f,i)=>f!=null?i:-1).filter(i=>i>=0);
+    if(played.length>1) s += `<rect class="cbarre" x="${sx(played[0])-7}" y="${fy(0)+5}" width="${sx(played[played.length-1])-sx(played[0])+14}" height="${fy(1)-fy(0)-10}" rx="7"/>`;
+    s += `<text class="cfretnum" x="${sx(0)-12}" y="${(fy(0)+fy(1))/2+4}" text-anchor="end">${n}</text>`;
+  }
+  frets.forEach((f,i)=>{
+    const x = sx(i);
+    if(f==null) s += `<text class="cmark" x="${x}" y="${fy(0)-6}" text-anchor="middle">×</text>`;
+    else if(f===0) s += `<text class="cmark" x="${x}" y="${fy(0)-6}" text-anchor="middle">○</text>`;
+    else { const row = f-n+1, cy = (fy(row-1)+fy(row))/2; s += `<circle class="cdot" cx="${x}" cy="${cy}" r="7"/>`; }
+  });
+  return s+'</svg>';
+}
+// A one-octave keyboard (root .. root+11) with the chord's notes highlighted and named.
+function crdKbdEl(root,intervals){
+  const el = document.createElement('div'); el.className = 'ckbd';
+  const tones = new Set(intervals), startM = 60+root;
+  let wi = 0; const whiteCount = Array.from({length:12},(_,i)=>startM+i).filter(m=>![1,3,6,8,10].includes(m%12)).length;
+  const U = 100/whiteCount;
+  for(let m=startM;m<=startM+11;m++){
+    const black = [1,3,6,8,10].includes(m%12), off = m-startM;
+    const k = document.createElement('div'); k.className = 'key '+(black?'blk':'wht');
+    if(black){ k.style.left = (wi*U-U*0.3)+'%'; k.style.width = (U*0.6)+'%'; }
+    else { k.style.left = (wi*U)+'%'; k.style.width = U+'%'; wi++; }
+    if(tones.has(off)){ k.style.background = 'var(--brass)'; k.style.color = 'var(--key-black)'; k.textContent = PCS[(root+off)%12]; }
+    el.appendChild(k);
+  }
+  return el;
+}
+let crdRoot = 0, crdQual = 'maj', crdInstr = 'guitar';
+function buildCrdRoots(){
+  $('chordRoots').innerHTML = CRD_CIRCLE.map(pc=>`<button type="button" data-croot="${pc}" aria-pressed="${pc===crdRoot}">${PCS[pc]}</button>`).join('');
+}
+function renderCrd(){
+  $('csub-guitar').setAttribute('aria-selected', String(crdInstr==='guitar'));
+  $('csub-piano').setAttribute('aria-selected', String(crdInstr==='piano'));
+  for(const b of $('chordRoots').children) b.setAttribute('aria-pressed', String(+b.dataset.croot===crdRoot));
+  for(const b of $('chordQual').children) b.setAttribute('aria-pressed', String(b.dataset.cq===crdQual));
+  const q = CRD_QMAP[crdQual];
+  $('chordName').textContent = `Ackord · ${PCS[crdRoot]}${q.suffix} (${PCS[crdRoot]}-${q.label.toLowerCase()})`;
+  const dia = $('chordDiagram'); dia.innerHTML = '';
+  if(crdInstr==='guitar'){
+    const {frets,n} = crdGuitarShape(crdRoot,crdQual);
+    const box = document.createElement('div'); box.className = 'cfb'; box.innerHTML = crdFretSVG(frets,n);
+    dia.appendChild(box);
+    $('chordHint').textContent = n>0 ? `Flyttbart grepp, barré på band ${n}. × = tyst sträng, ○ = öppen sträng.` : '× = tyst sträng, ○ = öppen sträng.';
+  } else {
+    dia.appendChild(crdKbdEl(crdRoot,q.intervals));
+    $('chordHint').textContent = 'Tonerna i ackordet är markerade och namngivna på klaviaturen.';
+  }
 }
 
 /* ---------- Intonation practice ---------- */
@@ -2992,15 +3122,21 @@ const confirmBtn = (btn, text, action) => {
 
 /* ---------- Modes ---------- */
 const PIANO_MODES = ['map','tune','over'];
+// Top-level tabs group several modes: "Tuners" covers the guitar tuner and the whole piano workflow,
+// "Ackord" covers the chord browser (which switches between guitar/piano internally, not via S.mode).
+function topOf(mode){ return mode==='guitar'||PIANO_MODES.includes(mode) ? 'tuners' : mode==='chord' ? 'chords' : mode; }
 function setMode(mode){
   if(S.mode==='metro' && mode!=='metro') mStop();
   if(S.mode==='sampler' && mode!=='sampler') sStop();
   S.mode = mode;
-  const piano = PIANO_MODES.includes(mode), top = piano ? 'piano' : mode;
+  const piano = PIANO_MODES.includes(mode), top = topOf(mode);
   if(piano) S.settings.lastPiano = mode;
-  for(const v of ['map','tune','over','guitar','metro','intone','sampler']) $('v-'+v).hidden = v!==mode;
+  if(top==='tuners') S.settings.lastTuner = mode==='guitar' ? 'guitar' : 'piano';
+  for(const v of ['map','tune','over','guitar','chord','metro','intone','sampler']) $('v-'+v).hidden = v!==mode;
   for(const v of PIANO_MODES){ const tb = $('tab-'+v); tb.setAttribute('aria-selected', String(v===mode)); tb.tabIndex = v===mode?0:-1; }
-  for(const v of ['guitar','piano','intone','metro','sampler']){ const tb = $('top-'+v); tb.setAttribute('aria-selected', String(v===top)); tb.tabIndex = v===top?0:-1; }
+  for(const v of ['tuners','chords','intone','metro','sampler']){ const tb = $('top-'+v); tb.setAttribute('aria-selected', String(v===top)); tb.tabIndex = v===top?0:-1; }
+  $('tunerTabs').hidden = top!=='tuners';
+  if(top==='tuners'){ $('tsub-guitar').setAttribute('aria-selected', String(mode==='guitar')); $('tsub-piano').setAttribute('aria-selected', String(piano)); }
   $('kbdBlock').hidden = $('pianoBar').hidden = $('pianoTabs').hidden = !piano;
   resetMap(); resetTune(); resetGuitar(); save(); renderAll();
   if(piano || mode==='guitar' || mode==='intone') autoMic();
@@ -3009,7 +3145,7 @@ function setMode(mode){
   if(piano) scrollToKey(mode==='map'?S.curMap:mode==='tune'?S.curTune:69);
 }
 function renderAll(){
-  if(S.mode==='map') renderMap(); else if(S.mode==='tune') renderTune(); else if(S.mode==='guitar') renderGuitar(); else if(S.mode==='metro') renderMetro(); else if(S.mode==='intone') renderIntoneHud(); else if(S.mode==='sampler') renderSampler(); else renderOver();
+  if(S.mode==='map') renderMap(); else if(S.mode==='tune') renderTune(); else if(S.mode==='guitar') renderGuitar(); else if(S.mode==='chord') renderCrd(); else if(S.mode==='metro') renderMetro(); else if(S.mode==='intone') renderIntoneHud(); else if(S.mode==='sampler') renderSampler(); else renderOver();
   paintKeys();
 }
 
@@ -3019,10 +3155,20 @@ buildKbd();
 $('mapPartials').innerHTML = Array.from({length:12},(_,i)=>`<span>${i+1}</span>`).join('');
 buildSettings();
 buildGuitar();
-document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
+buildCrdRoots();
+document.querySelectorAll('#pianoTabs .tab').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
 document.querySelectorAll('.mtab').forEach(b=>b.addEventListener('click',()=>{
-  const t = b.dataset.top; setMode(t==='piano' ? (PIANO_MODES.includes(S.settings.lastPiano)?S.settings.lastPiano:'map') : t);
+  const t = b.dataset.top;
+  if(t==='tuners') setMode(S.settings.lastTuner==='guitar' ? 'guitar' : (PIANO_MODES.includes(S.settings.lastPiano)?S.settings.lastPiano:'map'));
+  else if(t==='chords') setMode('chord');
+  else setMode(t);
 }));
+$('tsub-guitar').addEventListener('click',()=>setMode('guitar'));
+$('tsub-piano').addEventListener('click',()=>setMode(PIANO_MODES.includes(S.settings.lastPiano)?S.settings.lastPiano:'map'));
+$('csub-guitar').addEventListener('click',()=>{ crdInstr = 'guitar'; renderCrd(); });
+$('csub-piano').addEventListener('click',()=>{ crdInstr = 'piano'; renderCrd(); });
+$('chordRoots').addEventListener('click',e=>{ const b = e.target.closest('button'); if(!b) return; crdRoot = +b.dataset.croot; renderCrd(); });
+$('chordQual').addEventListener('click',e=>{ const b = e.target.closest('button'); if(!b || !b.dataset.cq) return; crdQual = b.dataset.cq; renderCrd(); });
 $('mStart').addEventListener('click',()=> M.running ? mStop() : mStart());
 // sampler controls
 const setSBpm = b => { S.settings.sBpm = Math.max(40,Math.min(220,Math.round(b))); $('sBpm').textContent = S.settings.sBpm; $('sRange').value = S.settings.sBpm; save(); };
@@ -3103,6 +3249,7 @@ document.addEventListener('keydown',e=>{
   if(e.target.closest('input,select')) return;
   if(S.mode==='metro' && e.key===' ' && !e.target.closest('button')){ e.preventDefault(); M.running ? mStop() : mStart(); return; }
   if(S.mode==='metro' && (e.key==='ArrowUp'||e.key==='ArrowDown') && !e.target.closest('button')){ e.preventDefault(); setBpm(S.settings.mBpm+(e.key==='ArrowUp'?1:-1)); return; }
+  if(S.mode==='sampler' && e.key===' ' && !e.target.closest('button')){ e.preventDefault(); SP.running ? sStop() : sStart(); return; }
   if(S.mode==='tune' && (e.key===' '||e.key==='Enter') && e.target===document.body){ e.preventDefault(); markTuned(); }
   if(S.mode==='tune' && !e.metaKey && !e.ctrlKey){
     if(e.key==='r'||e.key==='R') playRef();
