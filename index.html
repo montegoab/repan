@@ -310,7 +310,7 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
 .croots button{font:500 14px/1 var(--f-mono);padding:10px 2px;min-height:44px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
 .croots button[aria-pressed="true"]{border-color:var(--brass);background:var(--brass-soft)}
 .croots button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
-.cfb{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;max-width:240px;margin:0 auto}
+.cfb{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;width:100%;max-width:240px;margin:0 auto}
 .cfb svg{width:100%;height:auto;display:block}
 .cfb .cstr{stroke:var(--muted)}
 .cfb .cfret{stroke:var(--line)}
@@ -319,8 +319,14 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
 .cfb .cdot{fill:var(--brass)}
 .cfb .cmark{fill:var(--muted);font:600 13px var(--f-mono)}
 .cfb .cfretnum{fill:var(--muted);font:500 11px var(--f-mono)}
-.ckbd{position:relative;height:68px;background:var(--key-black);border-radius:4px;max-width:420px;margin:0 auto}
-.ckbd .key{font:600 10px var(--f-mono);display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px}
+.ckbd{position:relative;height:100px;background:var(--key-black);border-radius:4px;width:100%;max-width:520px;margin:0 auto}
+.ckbd .key b{position:absolute;left:50%;top:6px;transform:translateX(-50%);font:600 10px var(--f-mono);color:var(--ink);pointer-events:none}
+.ckbd .key.blk b{color:var(--key-white)}
+.ckbd .key i{position:absolute;left:50%;bottom:10px;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:var(--brass);pointer-events:none}
+.ckbd .key.blk i{bottom:7px}
+.cpair{display:flex;flex-wrap:wrap;gap:20px;justify-content:center}
+.cpair>div{flex:1 1 220px}
+.cpair h3{font:600 16px/1.2 var(--f-display);margin:0 0 8px;color:var(--ink);text-align:center}
 .section{display:grid;gap:10px;min-width:0}
 .section h2{font:600 22px/1.2 var(--f-display);margin:8px 0 0;text-wrap:balance}
 .section p{margin:0;color:var(--muted);max-width:65ch}
@@ -514,6 +520,7 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
       <button class="tab" role="tab" id="csub-piano" data-chordi="piano" type="button">Piano</button>
     </nav>
     <div class="croots" role="group" aria-label="Grundton" id="chordRoots"></div>
+    <label class="check"><input type="checkbox" id="chordPair"><span>Visa dur + mollparallell</span></label>
     <div class="seg" role="group" aria-label="Ackordtyp" id="chordQual">
       <button type="button" data-cq="maj" aria-pressed="true">Dur</button>
       <button type="button" data-cq="min" aria-pressed="false">Moll</button>
@@ -1719,22 +1726,28 @@ function crdFretSVG(frets,n){
     const x = sx(i);
     if(f==null) s += `<text class="cmark" x="${x}" y="${fy(0)-6}" text-anchor="middle">×</text>`;
     else if(f===0) s += `<text class="cmark" x="${x}" y="${fy(0)-6}" text-anchor="middle">○</text>`;
-    else { const row = f-n+1, cy = (fy(row-1)+fy(row))/2; s += `<circle class="cdot" cx="${x}" cy="${cy}" r="7"/>`; }
+    else { const row = n>0 ? f-n+1 : f, cy = (fy(row-1)+fy(row))/2; s += `<circle class="cdot" cx="${x}" cy="${cy}" r="7"/>`; }
   });
   return s+'</svg>';
 }
-// A one-octave keyboard (root .. root+11) with the chord's notes highlighted and named.
+// A fixed two-octave keyboard (C..B, C..B — not transposed to the root) with the chord's notes
+// dotted and named wherever they fall, so the shape always reads against a normal keyboard layout.
 function crdKbdEl(root,intervals){
   const el = document.createElement('div'); el.className = 'ckbd';
-  const tones = new Set(intervals), startM = 60+root;
-  let wi = 0; const whiteCount = Array.from({length:12},(_,i)=>startM+i).filter(m=>![1,3,6,8,10].includes(m%12)).length;
+  const tones = new Set(intervals.map(iv=>(root+iv)%12));
+  const startM = 60, span = 24;
+  let wi = 0; const whiteCount = Array.from({length:span},(_,i)=>startM+i).filter(m=>![1,3,6,8,10].includes(m%12)).length;
   const U = 100/whiteCount;
-  for(let m=startM;m<=startM+11;m++){
-    const black = [1,3,6,8,10].includes(m%12), off = m-startM;
+  for(let m=startM;m<startM+span;m++){
+    const pc = m%12, black = [1,3,6,8,10].includes(pc);
     const k = document.createElement('div'); k.className = 'key '+(black?'blk':'wht');
     if(black){ k.style.left = (wi*U-U*0.3)+'%'; k.style.width = (U*0.6)+'%'; }
     else { k.style.left = (wi*U)+'%'; k.style.width = U+'%'; wi++; }
-    if(tones.has(off)){ k.style.background = 'var(--brass)'; k.style.color = 'var(--key-black)'; k.textContent = PCS[(root+off)%12]; }
+    if(tones.has(pc)){
+      k.classList.add('tone');
+      const b = document.createElement('b'); b.textContent = PCS[pc]; k.appendChild(b);
+      k.appendChild(document.createElement('i'));
+    }
     el.appendChild(k);
   }
   return el;
@@ -1743,22 +1756,46 @@ let crdRoot = 0, crdQual = 'maj', crdInstr = 'guitar';
 function buildCrdRoots(){
   $('chordRoots').innerHTML = CRD_CIRCLE.map(pc=>`<button type="button" data-croot="${pc}" aria-pressed="${pc===crdRoot}">${PCS[pc]}</button>`).join('');
 }
+// The relative minor sits a minor third below its major (same key signature, different root).
+const crdRelMinor = root => (root+9)%12;
+function crdDiagramEl(root,qid){
+  if(crdInstr==='guitar'){
+    const {frets,n} = crdGuitarShape(root,qid);
+    const box = document.createElement('div'); box.className = 'cfb'; box.innerHTML = crdFretSVG(frets,n);
+    return box;
+  }
+  return crdKbdEl(root,CRD_QMAP[qid].intervals);
+}
 function renderCrd(){
+  const pair = $('chordPair').checked;
   $('csub-guitar').setAttribute('aria-selected', String(crdInstr==='guitar'));
   $('csub-piano').setAttribute('aria-selected', String(crdInstr==='piano'));
   for(const b of $('chordRoots').children) b.setAttribute('aria-pressed', String(+b.dataset.croot===crdRoot));
   for(const b of $('chordQual').children) b.setAttribute('aria-pressed', String(b.dataset.cq===crdQual));
-  const q = CRD_QMAP[crdQual];
-  $('chordName').textContent = `Ackord · ${PCS[crdRoot]}${q.suffix} (${PCS[crdRoot]}-${q.label.toLowerCase()})`;
+  $('chordQual').hidden = pair;
   const dia = $('chordDiagram'); dia.innerHTML = '';
-  if(crdInstr==='guitar'){
-    const {frets,n} = crdGuitarShape(crdRoot,crdQual);
-    const box = document.createElement('div'); box.className = 'cfb'; box.innerHTML = crdFretSVG(frets,n);
-    dia.appendChild(box);
-    $('chordHint').textContent = n>0 ? `Flyttbart grepp, barré på band ${n}. × = tyst sträng, ○ = öppen sträng.` : '× = tyst sträng, ○ = öppen sträng.';
+  if(pair){
+    const relRoot = crdRelMinor(crdRoot);
+    $('chordName').textContent = `Ackord · ${PCS[crdRoot]}-dur + ${PCS[relRoot]}-moll (mollparallell)`;
+    const wrap = document.createElement('div'); wrap.className = 'cpair';
+    const majCell = document.createElement('div'); majCell.innerHTML = `<h3>${PCS[crdRoot]}-dur</h3>`;
+    majCell.appendChild(crdDiagramEl(crdRoot,'maj'));
+    const minCell = document.createElement('div'); minCell.innerHTML = `<h3>${PCS[relRoot]}-moll</h3>`;
+    minCell.appendChild(crdDiagramEl(relRoot,'min'));
+    wrap.append(majCell,minCell);
+    dia.appendChild(wrap);
+    $('chordHint').textContent = `${PCS[relRoot]}-moll är mollparallellen till ${PCS[crdRoot]}-dur: samma förtecken, annan grundton.`
+      + (crdInstr==='guitar' ? ' × = tyst sträng, ○ = öppen sträng.' : ' Klaviaturerna visas i grundläget över två oktaver.');
   } else {
-    dia.appendChild(crdKbdEl(crdRoot,q.intervals));
-    $('chordHint').textContent = 'Tonerna i ackordet är markerade och namngivna på klaviaturen.';
+    const q = CRD_QMAP[crdQual];
+    $('chordName').textContent = `Ackord · ${PCS[crdRoot]}${q.suffix} (${PCS[crdRoot]}-${q.label.toLowerCase()})`;
+    dia.appendChild(crdDiagramEl(crdRoot,crdQual));
+    if(crdInstr==='guitar'){
+      const n = crdGuitarShape(crdRoot,crdQual).n;
+      $('chordHint').textContent = n>0 ? `Flyttbart grepp, barré på band ${n}. × = tyst sträng, ○ = öppen sträng.` : '× = tyst sträng, ○ = öppen sträng.';
+    } else {
+      $('chordHint').textContent = 'Klaviaturet visas i grundläget över två oktaver. Tangenterna som ska tryckas ner är markerade med en prick och namngivna.';
+    }
   }
 }
 
@@ -3169,6 +3206,7 @@ $('csub-guitar').addEventListener('click',()=>{ crdInstr = 'guitar'; renderCrd()
 $('csub-piano').addEventListener('click',()=>{ crdInstr = 'piano'; renderCrd(); });
 $('chordRoots').addEventListener('click',e=>{ const b = e.target.closest('button'); if(!b) return; crdRoot = +b.dataset.croot; renderCrd(); });
 $('chordQual').addEventListener('click',e=>{ const b = e.target.closest('button'); if(!b || !b.dataset.cq) return; crdQual = b.dataset.cq; renderCrd(); });
+$('chordPair').addEventListener('change',renderCrd);
 $('mStart').addEventListener('click',()=> M.running ? mStop() : mStart());
 // sampler controls
 const setSBpm = b => { S.settings.sBpm = Math.max(40,Math.min(220,Math.round(b))); $('sBpm').textContent = S.settings.sBpm; $('sRange').value = S.settings.sBpm; save(); };
