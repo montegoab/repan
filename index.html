@@ -197,7 +197,7 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
 .beats i.acc.now{background:var(--brass);border-color:var(--brass)}
 .dgrid{display:grid;gap:3px;align-items:center}
 .dgrid .lab{font:500 11px/1 var(--f-mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding-right:6px;white-space:nowrap}
-.dgrid .c{height:26px;border-radius:3px;background:var(--bg);border:1px solid var(--line);padding:0;margin:0;cursor:pointer;min-width:0;opacity:1}
+.dgrid .c{height:30px;border-radius:3px;background:var(--bg);border:1px solid var(--line);padding:0;margin:0;cursor:pointer;min-width:0;opacity:1;touch-action:manipulation;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .dgrid .c:hover{border-color:var(--brass)}
 .dgrid .c:focus-visible,.dgrid .lab:focus-visible{outline:2px solid var(--brass);outline-offset:1px}
 .dgrid .c.on{opacity:.72}
@@ -249,7 +249,7 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
 .sgrid .slab{font:600 12px/1.1 var(--f-body);text-align:left;padding:0 8px 0 0;height:34px;border:0;background:transparent;color:var(--ink);cursor:pointer;max-width:92px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sgrid .slab.sel{color:var(--brass)}
 .sgrid .slab:focus-visible,.sgrid .sc:focus-visible{outline:2px solid var(--brass);outline-offset:1px}
-.sgrid .sc{height:34px;border-radius:4px;border:1px solid var(--line);background:var(--bg);padding:0;cursor:pointer;min-width:0}
+.sgrid .sc{height:34px;border-radius:4px;border:1px solid var(--line);background:var(--bg);padding:0;cursor:pointer;min-width:0;touch-action:manipulation;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .sgrid .sc.beat{border-color:var(--muted)}
 .sgrid .sc.on{background:var(--ink);border-color:var(--ink);opacity:.68}
 .sgrid .sc.acc{opacity:1}
@@ -301,6 +301,12 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
 @media (max-width:420px){.rlogo{font-size:24px}#v-sampler.retro .bpm{font-size:62px}#v-sampler.retro .tempo-read{min-width:130px;padding-inline:12px}}
 .recording{background:var(--off)!important;border-color:var(--off)!important;color:#fff!important}
 @media (max-width:420px){.sgrid{grid-template-columns:auto repeat(16,minmax(0,1fr));gap:2px}.sgrid .slab{max-width:62px;font-size:11px}.sgrid .sc{height:30px}.sgrid .sc.grp{margin-left:2px}}
+/* Drum panels (metronome + sampler) go edge-to-edge on small screens, undoing .wrap's side
+   padding, so the 16-step grid gets as much touch-target width as the screen can give it. */
+@media (max-width:420px){
+  .drumpanel{margin-inline:-16px;border-radius:0;padding-inline:10px}
+  #v-sampler.retro .stage.drumpanel{margin-inline:-16px;border-radius:0}
+}
 .listen{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding-top:14px;border-top:1px solid var(--line)}
 .btn.play{display:inline-flex;align-items:center;gap:8px}
 .btn.play svg{width:12px;height:12px;fill:currentColor}
@@ -602,7 +608,7 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
 
   <!-- Metronom -->
   <section id="v-metro" class="section" hidden>
-    <div class="stage">
+    <div class="stage drumpanel">
       <p class="eyebrow">Metronom · <span id="mLbl">klassisk · 4/4</span></p>
       <div class="tempo">
         <button id="mMinus" class="btn ghost tstep" type="button" aria-label="Sänk tempot">−</button>
@@ -633,8 +639,11 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
       </div>
       <div id="mViz" class="mviz"></div>
       <div id="mEditBar" class="meditbar" hidden>
-        <p class="hint">Tryck på en ruta för att ändra slaget: slag → betonat → spökslag → av. Tryck på trummans namn för att höra den. Ändringar sparas för det här kompet och taktarten.</p>
-        <button id="mReset" class="btn ghost" type="button" hidden>Återställ kompet</button>
+        <p class="hint">Tryck på en ruta för att tända eller släcka ett slag. Håll in för ett spökslag. Tryck på trummans namn för att höra den. Ändringar sparas för det här kompet och taktarten.</p>
+        <div class="actions">
+          <button id="mClear" class="btn ghost" type="button">Rensa kompet</button>
+          <button id="mReset" class="btn ghost" type="button" hidden>Återställ kompet</button>
+        </div>
       </div>
       <div class="actions">
         <button id="mStart" class="btn primary mstart" type="button">Starta</button>
@@ -647,7 +656,7 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
 
   <!-- Sampler -->
   <section id="v-sampler" class="section retro" hidden>
-    <div class="stage">
+    <div class="stage drumpanel">
       <div class="rbadge"><span class="rlogo">SR-16</span><span class="rsub">Rytmsampler · 16 steg · 4/4</span></div>
       <div class="rstripes" aria-hidden="true"></div>
       <div class="tempo">
@@ -661,7 +670,7 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
         <button id="sStart" class="btn primary mstart" type="button">Starta</button>
         <button id="sClear" class="btn ghost" type="button">Töm rutnätet</button>
       </div>
-      <p class="hint">Tryck på en ruta: slag → betonat → spökslag → av. Tryck på ett ljuds namn för att lyssna och redigera det nedan.</p>
+      <p class="hint">Tryck på en ruta för att tända eller släcka ett slag. Håll in för ett spökslag. Tryck på ett ljuds namn för att lyssna och redigera det nedan.</p>
     </div>
 
     <div class="stage" id="sEditor">
@@ -2398,6 +2407,26 @@ function playIntoneRef(){
 // beginners hear the target for a second after a level-up and after a crash
 function iCue(){ if(S.settings.iDiff==='easy') iPlayTarget(1000); }
 
+/* ---------- Drum grid gesture ---------- */
+// Shared by the metronome's and the sampler's step grids: a quick tap toggles a cell on/off, a
+// hold (~420 ms) sets it to a ghost note. Pointer Events (not click) so touch and mouse behave
+// the same; a touch that turns into a scroll/drag cancels the gesture instead of firing it.
+function bindTapHold(el,onTap,onHold){
+  let timer = null, held = false, moved = false, sx = 0, sy = 0;
+  const cancel = () => { clearTimeout(timer); timer = null; };
+  el.addEventListener('pointerdown',e=>{
+    held = false; moved = false; sx = e.clientX; sy = e.clientY;
+    cancel(); timer = setTimeout(()=>{ held = true; onHold(); },420);
+  });
+  el.addEventListener('pointermove',e=>{
+    if(!moved && (Math.abs(e.clientX-sx)>10 || Math.abs(e.clientY-sy)>10)){ moved = true; cancel(); }
+  });
+  el.addEventListener('pointerup',()=>{ const wasHeld = held; cancel(); if(!wasHeld && !moved) onTap(); });
+  el.addEventListener('pointercancel',cancel);
+  el.addEventListener('pointerleave',cancel);
+  el.addEventListener('contextmenu',e=>e.preventDefault());
+}
+
 /* ---------- Sampler ---------- */
 // Four sample slots, a 16-step grid in 4/4, and per-slot volume, 3-band EQ and its own reverb.
 // Audio is kept in IndexedDB (too big for localStorage); slot settings and the pattern live with the prefs.
@@ -2569,7 +2598,24 @@ function sDraw(){
   requestAnimationFrame(sDraw);
 }
 function sHighlight(step){ SP.cells.forEach((col,i)=>col.forEach(el=>el.classList.toggle('now',i===step))); }
-const S_NEXT = {'.':'x', x:'X', X:'g', g:'.'};
+// Update one cell's own element in place rather than rebuilding the whole grid: a tap/hold
+// gesture is still in progress on this element when it fires, and replacing it out from under
+// an active pointer would send the eventual pointerup to a freshly-built replacement cell instead.
+function sUpdateCellEl(r,i,ch){
+  const el = SP.cells[i] && SP.cells[i][r];
+  if(!el) return;
+  el.className = 'sc q'+Math.floor(i/4)+(i%4===0?' beat':'')+(i%4===0&&i?' grp':'')+(ch!=='.'?' on':'')+(ch==='X'?' acc':'')+(ch==='g'?' ghost':'');
+  el.setAttribute('aria-label',`${sSlotCfg(r).name}, steg ${i+1}: ${ch==='X'?'betonat':ch==='x'?'slag':ch==='g'?'spökslag':'av'}`);
+}
+// Tap toggles a cell between off and a normal hit; a hold always sets it to a ghost note.
+function sSetCell(r,i,ch){
+  const p = [...sPattern()];
+  p[r] = p[r].slice(0,i)+ch+p[r].slice(i+1); S.settings.sPattern = p; save();
+  if(ch!=='.' && !SP.running) sAudition(r,VEL[ch]);
+  sUpdateCellEl(r,i,ch);
+}
+function sTapCell(r,i){ const ch = sPattern()[r][i]; sSetCell(r,i, ch==='.' ? 'x' : '.'); }
+function sHoldCell(r,i){ sSetCell(r,i,'g'); }
 function buildSamplerGrid(){
   const g = $('sGrid'); g.textContent = ''; SP.cells = Array.from({length:16},()=>[]);
   const pat = sPattern();
@@ -2582,12 +2628,7 @@ function buildSamplerGrid(){
       const c = document.createElement('button'), ch = pat[r][i]; c.type = 'button';
       c.className = 'sc q'+Math.floor(i/4)+(i%4===0?' beat':'')+(i%4===0&&i?' grp':'')+(ch!=='.'?' on':'')+(ch==='X'?' acc':'')+(ch==='g'?' ghost':'');
       c.setAttribute('aria-label',`${sSlotCfg(r).name}, steg ${i+1}: ${ch==='X'?'betonat':ch==='x'?'slag':ch==='g'?'spökslag':'av'}`);
-      c.addEventListener('click',()=>{
-        const p = [...sPattern()], nx = S_NEXT[p[r][i]] || 'x';
-        p[r] = p[r].slice(0,i)+nx+p[r].slice(i+1); S.settings.sPattern = p; save();
-        if(nx!=='.' && !SP.running) sAudition(r,VEL[nx]);
-        buildSamplerGrid();
-      });
+      bindTapHold(c, ()=>sTapCell(r,i), ()=>sHoldCell(r,i));
       g.appendChild(c); SP.cells[i].push(c);
     }
   }
@@ -2776,23 +2817,40 @@ function mEdited(){
   return Object.values(ed).every(s=>typeof s==='string' && s.length===n) ? ed : null;   // ignore edits made for an older grid
 }
 function mPattern(){ return mEdited() || mGroove().pat; }
-// tap cycle for a cell: off → normal → accent → ghost → off
-const CELL_NEXT = {'.':'x', x:'X', X:'g', g:'.'};
 const CELL_NAME = {'.':'av', x:'slag', X:'betonat slag', g:'spökslag'};
-function toggleCell(r,i){
+// Update one cell's own element in place rather than rebuilding the whole grid: a tap/hold
+// gesture is still in progress on this element when it fires, and replacing it out from under
+// an active pointer would send the eventual pointerup to a freshly-built replacement cell instead.
+function mUpdateCellEl(r,i,ch){
+  const el = mCells[i] && mCells[i][DRUM_ROWS.indexOf(r)];
+  if(!el) return;
+  const beatStep = mGroove().div, names = ROW_NAMES[S.settings.mKit] || ROW_NAMES.vintage;
+  el.className = 'c'+(i%beatStep===0?' beat':'')+(ch!=='.'?' on':'')+(ch==='g'?' soft':'')+(ch==='X'?' acc':'');
+  el.setAttribute('aria-label',`${names[r]}, steg ${i+1}: ${CELL_NAME[ch]||'slag'}`);
+}
+// Tap toggles a cell between off and a normal hit; a hold always sets it to a ghost note
+// (accents stay reachable through the built-in grooves, just not through the grid gesture).
+function mSetCell(r,i,ch){
   const n = mSteps(), cur = mPattern(), pat = {};
   for(const k of DRUM_ROWS) pat[k] = (cur[k] || '').padEnd(n,'.').slice(0,n);
-  const ch = pat[r][i] || '.', nx = CELL_NEXT[ch] || 'x';
-  pat[r] = pat[r].slice(0,i) + nx + pat[r].slice(i+1);
+  pat[r] = pat[r].slice(0,i) + ch + pat[r].slice(i+1);
   for(const k of DRUM_ROWS) if(!/[^.]/.test(pat[k])) delete pat[k];
   S.settings.mEdits = {...(S.settings.mEdits||{}), [editKey()]: pat};
-  save(); renderMetro();
+  save();
+  mUpdateCellEl(r,i,ch);
+  $('mReset').hidden = !mEdited();
   // let the drum be heard right away when a hit is added
-  if(nx!=='.' && !M.running){ const ctx = playCtx(); ctx.resume(); mBus(ctx); KITS[S.settings.mKit][r](ctx,ctx.currentTime+0.01,VEL[nx],M.bus[S.settings.mKit]); }
+  if(ch!=='.' && !M.running){ const ctx = playCtx(); ctx.resume(); mBus(ctx); KITS[S.settings.mKit][r](ctx,ctx.currentTime+0.01,VEL[ch],M.bus[S.settings.mKit]); }
 }
+function mTapCell(r,i){ const ch = (mPattern()[r]||'')[i] || '.'; mSetCell(r,i, ch==='.' ? 'x' : '.'); }
+function mHoldCell(r,i){ mSetCell(r,i,'g'); }
 function resetGroove(){
   const e = {...(S.settings.mEdits||{})}; delete e[editKey()];
   S.settings.mEdits = e; save(); renderMetro();
+}
+function clearGroove(){
+  S.settings.mEdits = {...(S.settings.mEdits||{}), [editKey()]: {}};
+  save(); renderMetro();
 }
 function previewDrum(r){ const ctx = playCtx(); ctx.resume(); mBus(ctx); const mg = M.bus.master.gain; if(!M.running){ mg.cancelScheduledValues(ctx.currentTime); mg.setValueAtTime(S.settings.mVol,ctx.currentTime); } KITS[S.settings.mKit][r](ctx,ctx.currentTime+0.01,0.9,M.bus[S.settings.mKit]); }
 // click accents: 2 = bar start, 1 = secondary beat (beat 4 in 6/8), 0 = other
@@ -2998,7 +3056,7 @@ function buildMetroViz(){
       c.type = 'button';
       c.className = 'c'+(i%beatStep===0?' beat':'')+(ch!=='.'?' on':'')+(ch==='g'?' soft':'')+(ch==='X'?' acc':'');
       c.setAttribute('aria-label',`${names[r]}, steg ${i+1}: ${CELL_NAME[ch]||'slag'}`);
-      c.addEventListener('click',()=>toggleCell(r,i));
+      bindTapHold(c, ()=>mTapCell(r,i), ()=>mHoldCell(r,i));
       grid.appendChild(c); mCells[i].push(c);
     }
   }
@@ -3365,6 +3423,7 @@ $('iPlay').addEventListener('click',playIntoneRef);
 $('iRestart').addEventListener('click',()=>{ iReset(); });
 $('mTap').addEventListener('click',tapTempo);
 $('mReset').addEventListener('click',resetGroove);
+confirmBtn($('mClear'),'Tryck igen för att tömma',clearGroove);
 $('mMinus').addEventListener('click',()=>setBpm(S.settings.mBpm-1));
 $('mPlus').addEventListener('click',()=>setBpm(S.settings.mBpm+1));
 $('mRange').addEventListener('input',e=>setBpm(+e.target.value));
